@@ -15,18 +15,15 @@ COPY ./src ./src
 
 # Build the application
 RUN mvn package -DskipTests
-
-# Stage 2: Create the runtime image
-FROM amazoncorretto:17-alpine
-
-# Set the working directory
-WORKDIR /app
-
-# Create the directory for file storage
 RUN mkdir -p /app/videos
 
-# Copy the built artifact from the builder stage
-COPY --from=builder /target/*.jar /app/app.jar
+# Stage 2: Run on a lightweight Java 17 JRE image
+FROM eclipse-temurin:17-jre-alpine
 
-# Run the application
+WORKDIR /app
+
+COPY --from=builder --chown=10001:10001 /target/*.jar /app/app.jar
+COPY --from=builder --chown=10001:10001 /app/videos /app/videos
+
+USER 10001:10001
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
